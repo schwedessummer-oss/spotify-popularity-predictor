@@ -28,29 +28,43 @@ emotion_ohe = joblib.load(os.path.join(MODEL_DIR, "emotion_ohe.joblib"))
 album_type_ohe = joblib.load(os.path.join(MODEL_DIR, "album_type_ohe.joblib"))
 sentence_model = SentenceTransformer("all-mpnet-base-v2")
 
-# Load top genres from training data
+# Load top genres from training data (optional - use defaults if files not found)
 print("Loading genre database...")
 all_genres = []
-for emotion_file in ["energetic_tracks_enhanced.csv", "happy_tracks_enhanced.csv", 
-                     "love_tracks_enhanced.csv", "sad_tracks_enhanced.csv"]:
-    path = os.path.join(SPOTIFY6_PATH, emotion_file)
-    if os.path.exists(path):
-        df = pd.read_csv(path, encoding='utf-8', on_bad_lines='skip')
-        if 'artist_genres' in df.columns:
-            for genres_str in df['artist_genres'].dropna():
-                try:
-                    genres = eval(genres_str) if isinstance(genres_str, str) else genres_str
-                    if isinstance(genres, list):
-                        all_genres.extend(genres)
-                except:
-                    pass
+if os.path.exists(SPOTIFY6_PATH):
+    for emotion_file in ["energetic_tracks_enhanced.csv", "happy_tracks_enhanced.csv", 
+                         "love_tracks_enhanced.csv", "sad_tracks_enhanced.csv"]:
+        path = os.path.join(SPOTIFY6_PATH, emotion_file)
+        if os.path.exists(path):
+            try:
+                df = pd.read_csv(path, encoding='utf-8', on_bad_lines='skip')
+                if 'artist_genres' in df.columns:
+                    for genres_str in df['artist_genres'].dropna():
+                        try:
+                            genres = eval(genres_str) if isinstance(genres_str, str) else genres_str
+                            if isinstance(genres, list):
+                                all_genres.extend(genres)
+                        except:
+                            pass
+            except Exception as e:
+                print(f"Warning: Could not load {emotion_file}: {e}")
 
 def _slug(text):
     """Convert genre to slug format."""
     return text.lower().strip().replace(' ', '_').replace('-', '_')
 
-genre_counts = Counter(_slug(g) for g in all_genres)
-top_genres = [g for g, _ in genre_counts.most_common(40)]
+# Use loaded genres or fallback to common genres
+if all_genres:
+    genre_counts = Counter(_slug(g) for g in all_genres)
+    top_genres = [g for g, _ in genre_counts.most_common(40)]
+else:
+    print("Using default genre list...")
+    top_genres = ['pop', 'hip_hop', 'rock', 'dance_pop', 'rap', 'r_b', 'edm', 'trap', 
+                  'indie', 'alternative', 'country', 'latin', 'electronic', 'house', 
+                  'soul', 'funk', 'reggaeton', 'jazz', 'metal', 'folk', 'blues', 'punk',
+                  'disco', 'techno', 'dubstep', 'ambient', 'classical', 'reggae', 'indie_pop',
+                  'synth_pop', 'electro', 'garage', 'drum_and_bass', 'trance', 'hardcore',
+                  'lo_fi', 'k_pop', 'afrobeat', 'grime', 'progressive']
 
 # Load average statistics
 print("Computing baseline statistics...")
