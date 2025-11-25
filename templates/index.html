@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Popularity Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        .spotify-fields {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .spotify-fields.active {
+            display: block;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .result-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .result-header h2 {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .result-header .track-info {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .album-art {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .prediction-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .prediction-box h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .score {
+            font-size: 4em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .category {
+            font-size: 1.5em;
+            opacity: 0.9;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .comparison-box {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .comparison-box h4 {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .comparison-score {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .impact {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .impact.negative {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+
+        .impact-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .impact.negative .impact-value {
+            color: #dc3545;
+        }
+
+        .metadata {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .metadata h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .metadata-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .metadata-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metadata-value {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .accuracy {
+            background: #e7f3ff;
+            border-left: 4px solid #0066cc;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .accuracy h4 {
+            color: #0066cc;
+            margin-bottom: 10px;
+        }
+
+        .accuracy-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+
+        .accuracy-stat {
+            text-align: center;
+        }
+
+        .accuracy-stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #0066cc;
+        }
+
+        .accuracy-stat-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .spotify-link {
+            display: inline-block;
+            background: #1DB954;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .spotify-link:hover {
+            background: #1ed760;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4);
+        }
+
+        .reset-btn {
+            background: #6c757d;
+            margin-top: 20px;
+        }
+
+        .reset-btn:hover {
+            background: #5a6268;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Spotify Popularity Predictor</h1>
+            <p>Predict track popularity with AI-powered insights</p>
+        </div>
+
+        <div class="card">
+            <form id="predictionForm">
+                <div class="form-group">
+                    <label for="title">Song Title *</label>
+                    <input type="text" id="title" name="title" required placeholder="Enter song title...">
+                </div>
+
+                <div class="form-group">
+                    <label for="artist">Artist Name *</label>
+                    <input type="text" id="artist" name="artist" required placeholder="Enter artist name...">
+                </div>
+
+                <div class="form-group">
+                    <label for="emotion">Emotion/Vibe</label>
+                    <select id="emotion" name="emotion">
+                        <option value="happy">😊 Happy</option>
+                        <option value="sad">😢 Sad</option>
+                        <option value="energetic">⚡ Energetic</option>
+                        <option value="love">❤️ Love</option>
+                    </select>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="useSpotify" name="useSpotify">
+                    <label for="useSpotify">Fetch real data from Spotify API (for better accuracy)</label>
+                </div>
+
+                <div id="spotifyFields" class="spotify-fields">
+                    <div class="form-group">
+                        <label for="clientId">Spotify Client ID</label>
+                        <input type="text" id="clientId" name="clientId" placeholder="Your Spotify Client ID">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="clientSecret">Spotify Client Secret</label>
+                        <input type="password" id="clientSecret" name="clientSecret" placeholder="Your Spotify Client Secret">
+                    </div>
+
+                    <p style="color: #666; font-size: 0.9em; margin-top: 10px;">
+                        💡 Get credentials at <a href="https://developer.spotify.com/dashboard" target="_blank" style="color: #667eea;">developer.spotify.com</a>
+                    </p>
+                </div>
+
+                <button type="submit" class="btn">Predict Popularity</button>
+            </form>
+
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Analyzing track and predicting popularity...</p>
+            </div>
+
+            <div id="results" class="results">
+                <div class="result-header">
+                    <h2 id="resultTitle"></h2>
+                    <div class="track-info" id="resultArtist"></div>
+                    <img id="albumArt" class="album-art" style="display: none;">
+                </div>
+
+                <div id="predictionWithData" style="display: none;">
+                    <div class="prediction-box">
+                        <h3>🤖 Prediction with Real Data</h3>
+                        <div class="score" id="scoreReal"></div>
+                        <div class="category" id="categoryReal"></div>
+                    </div>
+
+                    <div class="accuracy">
+                        <h4>📈 Model Accuracy</h4>
+                        <p><strong>Actual Spotify Popularity:</strong> <span id="actualPop"></span>/100</p>
+                        <div class="accuracy-stats">
+                            <div class="accuracy-stat">
+                                <div class="accuracy-stat-value" id="errorAbs"></div>
+                                <div class="accuracy-stat-label">Absolute Error</div>
+                            </div>
+                            <div class="accuracy-stat">
+                                <div class="accuracy-stat-value" id="errorPct"></div>
+                                <div class="accuracy-stat-label">Relative Error</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="comparison">
+                        <div class="comparison-box">
+                            <h4>With Real Data</h4>
+                            <div class="comparison-score" id="scoreRealComp"></div>
+                        </div>
+                        <div class="comparison-box">
+                            <h4>With Defaults</h4>
+                            <div class="comparison-score" id="scoreBaseline"></div>
+                        </div>
+                    </div>
+
+                    <div id="impactBox" class="impact">
+                        <h4>💎 Real Data Impact</h4>
+                        <div class="impact-value" id="impactValue"></div>
+                        <p id="impactText" style="margin-top: 10px;"></p>
+                    </div>
+
+                    <div class="metadata">
+                        <h4>📋 Track Metadata</h4>
+                        <div class="metadata-grid" id="metadataGrid"></div>
+                    </div>
+
+                    <div style="text-align: center;">
+                        <a id="spotifyLink" href="#" target="_blank" class="spotify-link">
+                            🎧 Listen on Spotify
+                        </a>
+                    </div>
+                </div>
+
+                <div id="predictionBasicOnly" style="display: none;">
+                    <div class="prediction-box">
+                        <h3>🤖 Predicted Popularity</h3>
+                        <div class="score" id="scoreBasic"></div>
+                        <div class="category" id="categoryBasic"></div>
+                    </div>
+                    <p style="text-align: center; color: #666; margin-top: 20px;">
+                        Using dataset average values. Enable Spotify API for more accurate predictions.
+                    </p>
+                </div>
+
+                <button class="btn reset-btn" onclick="resetForm()">Predict Another Track</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle Spotify fields
+        document.getElementById('useSpotify').addEventListener('change', function() {
+            document.getElementById('spotifyFields').classList.toggle('active', this.checked);
+        });
+
+        // Form submission
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                title: document.getElementById('title').value,
+                artist: document.getElementById('artist').value,
+                emotion: document.getElementById('emotion').value,
+                use_spotify: document.getElementById('useSpotify').checked,
+                spotify_client_id: document.getElementById('clientId').value,
+                spotify_client_secret: document.getElementById('clientSecret').value
+            };
+
+            // Show loading
+            document.getElementById('predictionForm').style.display = 'none';
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').classList.remove('active');
+
+            try {
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error occurred'));
+                    document.getElementById('predictionForm').style.display = 'block';
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+                document.getElementById('predictionForm').style.display = 'block';
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        });
+
+        function displayResults(data) {
+            document.getElementById('resultTitle').textContent = data.title;
+            document.getElementById('resultArtist').textContent = 'by ' + data.artist;
+
+            if (data.metadata) {
+                // Show results with Spotify data
+                document.getElementById('predictionWithData').style.display = 'block';
+                document.getElementById('predictionBasicOnly').style.display = 'none';
+
+                // Album art
+                if (data.metadata.album_art) {
+                    const albumArt = document.getElementById('albumArt');
+                    albumArt.src = data.metadata.album_art;
+                    albumArt.style.display = 'block';
+                }
+
+                // Main prediction
+                document.getElementById('scoreReal').textContent = data.predicted_with_data + '/100';
+                document.getElementById('categoryReal').textContent = data.category_icon + ' ' + data.category;
+
+                // Accuracy
+                document.getElementById('actualPop').textContent = data.actual_popularity;
+                document.getElementById('errorAbs').textContent = data.error + ' pts';
+                document.getElementById('errorPct').textContent = data.error_pct + '%';
+
+                // Comparison
+                document.getElementById('scoreRealComp').textContent = data.predicted_with_data;
+                document.getElementById('scoreBaseline').textContent = data.predicted_baseline;
+
+                // Impact
+                const impactBox = document.getElementById('impactBox');
+                const impactValue = document.getElementById('impactValue');
+                const impactText = document.getElementById('impactText');
+                
+                impactValue.textContent = (data.data_impact > 0 ? '+' : '') + data.data_impact + ' points';
+                
+                if (Math.abs(data.data_impact) > 5) {
+                    impactBox.classList.toggle('negative', data.data_impact < 0);
+                    impactText.textContent = data.data_impact > 0 
+                        ? '↗️ Real metadata significantly boosts prediction!'
+                        : '↘️ Real metadata lowers prediction (unusual)';
+                } else {
+                    impactBox.classList.remove('negative');
+                    impactText.textContent = 'Track characteristics matter more than artist metadata';
+                }
+
+                // Metadata
+                const metadataGrid = document.getElementById('metadataGrid');
+                metadataGrid.innerHTML = `
+                    <div class="metadata-item">
+                        <div class="metadata-label">Artist Popularity</div>
+                        <div class="metadata-value">${data.metadata.artist_popularity}/100</div>
+                    </div>
+                    <div class="metadata-item">
+                        <div class="metadata-label">Followers</div>
+                        <div class="metadata-value">${data.metadata.followers.toLocaleString()}</div>
+                    </div>
+                    <div class="metadata-item">
+                        <div class="metadata-label">Genres</div>
+                        <div class="metadata-value">${data.metadata.genres.join(', ') || 'None'}</div>
+                    </div>
+                    <div class="metadata-item">
+                        <div class="metadata-label">Album Type</div>
+                        <div class="metadata-value">${data.metadata.album_type}</div>
+                    </div>
+                    <div class="metadata-item">
+                        <div class="metadata-label">Markets</div>
+                        <div class="metadata-value">${data.metadata.markets}</div>
+                    </div>
+                    <div class="metadata-item">
+                        <div class="metadata-label">Duration</div>
+                        <div class="metadata-value">${data.metadata.duration}s</div>
+                    </div>
+                    <div class="metadata-item">
+                        <div class="metadata-label">Explicit</div>
+                        <div class="metadata-value">${data.metadata.explicit ? 'Yes' : 'No'}</div>
+                    </div>
+                `;
+
+                // Spotify link
+                document.getElementById('spotifyLink').href = data.metadata.spotify_link;
+
+            } else {
+                // Show basic results
+                document.getElementById('predictionWithData').style.display = 'none';
+                document.getElementById('predictionBasicOnly').style.display = 'block';
+
+                document.getElementById('scoreBasic').textContent = data.predicted + '/100';
+                document.getElementById('categoryBasic').textContent = data.category_icon + ' ' + data.category;
+            }
+
+            document.getElementById('results').classList.add('active');
+        }
+
+        function resetForm() {
+            document.getElementById('predictionForm').reset();
+            document.getElementById('predictionForm').style.display = 'block';
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('albumArt').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
