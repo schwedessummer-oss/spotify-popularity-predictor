@@ -4,7 +4,7 @@ services:
     env: python
     runtime: python
     region: oregon
-    buildCommand: pip install --no-cache-dir -r requirements.txt
-    startCommand: gunicorn web_app:app --bind 0.0.0.0:$PORT
+  buildCommand: pip install --no-cache-dir -r requirements.txt
+  startCommand: python3 web_app.py
     autoDeploy: true
     healthCheckPath: /
