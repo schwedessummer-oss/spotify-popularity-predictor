@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: spotify-popularity-predictor
+    env: python
+    runtime: python
+    region: oregon
+    buildCommand: pip install --no-cache-dir -r requirements.txt
+    startCommand: gunicorn web_app:app --bind 0.0.0.0:$PORT
+    autoDeploy: true
+    healthCheckPath: /

@@ -8,7 +8,12 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
-from sentence_transformers import SentenceTransformer
+try:
+    from sentence_transformers import SentenceTransformer
+    _ST_AVAILABLE = True
+except Exception as _e:
+    print(f"Warning: sentence-transformers unavailable ({_e}); using dummy embeddings.")
+    _ST_AVAILABLE = False
 from collections import Counter
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -26,7 +31,14 @@ model = joblib.load(os.path.join(MODEL_DIR, "xgb_popularity_model.joblib"))
 scaler = joblib.load(os.path.join(MODEL_DIR, "scaler_num.joblib"))
 emotion_ohe = joblib.load(os.path.join(MODEL_DIR, "emotion_ohe.joblib"))
 album_type_ohe = joblib.load(os.path.join(MODEL_DIR, "album_type_ohe.joblib"))
-sentence_model = SentenceTransformer("all-mpnet-base-v2")
+if _ST_AVAILABLE:
+    try:
+        sentence_model = SentenceTransformer("all-mpnet-base-v2")
+    except Exception as _load_e:
+        print(f"Warning: failed to load SentenceTransformer model ({_load_e}); using dummy embeddings.")
+        sentence_model = None
+else:
+    sentence_model = None
 
 # Load top genres from training data (optional - use defaults if files not found)
 print("Loading genre database...")
@@ -270,7 +282,15 @@ def build_feature_vector(title, artist, emotion='happy', artist_popularity=None,
     if genres_str:
         text += f" | Genres: {genres_str}"
     
-    embedding = sentence_model.encode([text])[0]
+    if sentence_model is not None:
+        try:
+            embedding = sentence_model.encode([text])[0]
+        except Exception as _emb_e:
+            print(f"Warning: embedding generation failed ({_emb_e}); using zero vector.")
+            embedding = np.zeros(768, dtype=float)
+    else:
+        # Fallback: zero vector embedding when model not available
+        embedding = np.zeros(768, dtype=float)
     
     numeric_features = np.array([
         duration_feats['duration_s'], release_feats['release_age'], release_feats['days_since_release'],
