@@ -250,8 +250,16 @@ def build_feature_vector(title, artist, duration_ms, release_date, emotion, albu
         duration_feats['duration_z_emotion']
     ]
     
-    # Scale numeric features
-    numeric_scaled = scaler.transform([numeric_features])[0]
+    # Scale numeric features (pad/truncate to match scaler expectations)
+    try:
+        numeric_scaled = scaler.transform([numeric_features])[0]
+    except Exception:
+        target_len = getattr(scaler, 'n_features_in_', len(numeric_features))
+        if len(numeric_features) < target_len:
+            numeric_padded = numeric_features + [0.0] * (target_len - len(numeric_features))
+        else:
+            numeric_padded = numeric_features[:target_len]
+        numeric_scaled = scaler.transform([numeric_padded])[0]
     
     # Binary features
     binary_features = [
