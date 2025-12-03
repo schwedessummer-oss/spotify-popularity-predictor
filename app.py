@@ -184,23 +184,32 @@ def compute_duration_features(duration_ms, emotion_avg_duration=210000):
     return features
 
 def compute_release_features(release_date):
-    """Compute release date features"""
+    """Compute release date features robustly for Streamlit date_input, strings, and timestamps."""
     try:
-        if isinstance(release_date, str):
-            release_dt = pd.to_datetime(release_date)
-        else:
-            # Convert to pandas Timestamp to ensure compatibility
-            release_dt = pd.Timestamp(release_date)
-    except:
+        # Normalize any input (datetime.date, datetime, string, Timestamp) to pandas Timestamp
+        release_dt = pd.to_datetime(release_date, errors='coerce')
+        if pd.isna(release_dt):
+            release_dt = pd.Timestamp.now()
+    except Exception:
         release_dt = pd.Timestamp.now()
-    
-    current_year = datetime.now().year
-    release_year = release_dt.year
-    days_since = (pd.Timestamp.now() - release_dt).days
-    
+
+    # Use pandas Timestamp for current time
+    current_ts = pd.Timestamp.now()
+    release_year = int(release_dt.year)
+
+    # Compute days since using Timedelta to avoid attribute issues
+    delta = current_ts - release_dt
+    try:
+        days_since = int(delta / pd.Timedelta(days=1))
+    except Exception:
+        # Fallback if division fails for any reason
+        days_since = max(0, int(getattr(delta, 'days', 0)))
+    if days_since < 0:
+        days_since = 0
+
     features = {
-        'release_age': current_year - release_year,
-        'days_since_release': max(0, days_since),
+        'release_age': int(current_ts.year - release_year),
+        'days_since_release': days_since,
         'is_very_recent': int(days_since < 30),
         'is_recent': int(days_since < 90),
         'is_new': int(days_since < 365),
