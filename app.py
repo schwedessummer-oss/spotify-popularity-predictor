@@ -189,7 +189,8 @@ def compute_release_features(release_date):
         if isinstance(release_date, str):
             release_dt = pd.to_datetime(release_date)
         else:
-            release_dt = release_date
+            # Convert to pandas Timestamp to ensure compatibility
+            release_dt = pd.Timestamp(release_date)
     except:
         release_dt = pd.Timestamp.now()
     
